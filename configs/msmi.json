@@ -1,0 +1,22 @@
+{
+  "name": "msmi_nir",
+  "seed": 0,
+  "runs": 3,
+  "n_folds": 5,
+  "model": {"patch_size": 4, "embed_dim": 512, "wavelength_embed": "fourier", "fourier_frequencies": 256,
+            "encoder_dim": 512, "encoder_depth": 12, "encoder_heads": 8,
+            "decoder_dim": 256, "decoder_depth": 4, "decoder_heads": 8},
+  "mask": {"strategy": "cmsm", "ratio": 0.75, "k_min": 1, "k_max": 3, "l_min": 1, "l_max": 6},
+  "loss": {"name": "casrl", "grad_weight": 0.5, "beta": 1.0},
+  "train": {"epochs": 800, "batch_size": 256, "lr": 0.0001, "weight_decay": 0.05, "warmup_epochs": 10, "patience": 50},
+  "inference": {"ensemble_size": 64},
+  "localization": {"alpha": 0.5, "min_separation_nm": 100.0, "min_height": 0.12, "min_prominence": 0.10, "tolerance_nm": 20.0},
+  "preprocess": {"resample_points": 32, "savgol_window": 15, "savgol_order": 2, "snv": true, "minmax": true},
+  "data": {
+    "source": "table",
+    "path": "data/MSMI-NIR/final-01.csv",
+    "label_col": "impurity",
+    "normal_values": ["none", "pure", "0"],
+    "contaminant_col": "impurity"
+  }
+}

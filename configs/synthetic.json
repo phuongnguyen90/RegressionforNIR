@@ -1,0 +1,26 @@
+{
+  "name": "synthetic",
+  "seed": 0,
+  "runs": 1,
+  "n_folds": 5,
+  "model": {
+    "patch_size": 16,
+    "embed_dim": 64,
+    "fourier_frequencies": 32,
+    "encoder_dim": 64,
+    "encoder_depth": 4,
+    "encoder_heads": 4,
+    "decoder_dim": 32,
+    "decoder_depth": 2,
+    "decoder_heads": 4
+  },
+  "mask": {"ratio": 0.75, "k_min": 2, "k_max": 4, "l_min": 2, "l_max": 8},
+  "loss": {"name": "casrl", "grad_weight": 0.5, "beta": 1.0},
+  "train": {"epochs": 80, "batch_size": 64, "warmup_epochs": 3, "patience": 20, "log_every": 10, "lr": 0.0005},
+  "inference": {"ensemble_size": 16},
+  "localization": {"tolerance_nm": 15.0, "min_separation_nm": 10.0},
+  "data": {
+    "source": "synthetic",
+    "synthetic": {"n_normal": 800, "n_anomalous": 400, "n_channels": 512, "seed": 0}
+  }
+}

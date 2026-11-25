@@ -1,0 +1,23 @@
+{
+  "name": "vf_pst_nir",
+  "seed": 0,
+  "runs": 3,
+  "n_folds": 5,
+  "model": {"patch_size": 32, "embed_dim": 512, "wavelength_embed": "fourier", "fourier_frequencies": 256,
+            "encoder_dim": 512, "encoder_depth": 12, "encoder_heads": 8,
+            "decoder_dim": 256, "decoder_depth": 4, "decoder_heads": 8},
+  "mask": {"strategy": "cmsm", "ratio": 0.75, "k_min": 4, "k_max": 8, "l_min": 8, "l_max": 64},
+  "loss": {"name": "casrl", "grad_weight": 0.5, "beta": 1.0},
+  "train": {"epochs": 800, "batch_size": 256, "lr": 0.0001, "weight_decay": 0.05, "warmup_epochs": 10, "patience": 50},
+  "inference": {"ensemble_size": 64, "aggregation": "full", "error_map": "mse"},
+  "threshold": {"method": "youden"},
+  "localization": {"alpha": 0.5, "min_separation_nm": 10.0, "min_height": 0.10, "min_prominence": 0.08, "tolerance_nm": 15.0},
+  "preprocess": {"savgol_window": 15, "savgol_order": 2, "snv": true, "minmax": true},
+  "data": {
+    "source": "table",
+    "path": "data/VF-PST-NIR/OCEANFX/ALL.csv",
+    "anomaly_cols": ["Thiamethoxam", "Permethrin", "Metalaxyl", "Azoxystrobin", "Imidacloprid",
+                     "Difenoconazole", "Cypermethrin", "Chlorothalonil", "Indoxacarb", "Abamectin", "Clothianidin"],
+    "bands_file": "configs/bands_vf_pst.json"
+  }
+}
