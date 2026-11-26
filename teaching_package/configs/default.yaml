@@ -1,0 +1,55 @@
+# Cấu hình mặc định của SpecMultiMAE-AD (Bảng 3.4 của báo cáo; Section 5.3 của bài báo)
+model:
+  P: 32              # kích thước mảnh phổ
+  d: 512             # chiều nhúng mảnh; token sau ghép với nhúng bước sóng = 2d = 1024
+  d_enc: 512         # độ rộng bộ mã hóa
+  enc_depth: 12
+  enc_heads: 8
+  d_dec: 128         # mỗi nửa token của bộ giải mã; độ rộng bộ giải mã = 2*d_dec = 256
+  dec_depth: 4
+  dec_heads: 8
+  mlp_ratio: 4.0
+  dropout: 0.0
+  wl_mode: fourier   # fourier | linear | sinusoidal (biến thể không nhúng bước sóng)
+  n_freq: 256        # số tần số Fourier
+masking:
+  strategy: cmsm     # cmsm | scattered (biến thể không CMSM)
+  mask_ratio: 0.75
+  l_min: 8           # độ dài đoạn tối thiểu (mảnh)
+  l_max: 64          # độ dài đoạn tối đa (mảnh)
+  K_range: [4, 8]
+loss:
+  lambda: 0.5        # trọng số thành phần gradient của CASRL
+  beta: 1.0          # mũ trọng số đoạn w_k = (l_k / l_bar)^beta
+  vanilla: false     # true = MSE thường (biến thể không CASRL)
+train:
+  lr: 1.0e-4
+  weight_decay: 0.05
+  warmup_epochs: 10
+  epochs: 800
+  patience: 50
+  batch_size: 256
+  grad_clip: 1.0
+  log_every: 10
+inference:
+  M: 64              # số mặt nạ tổ hợp MMIE (M = 1: không MMIE)
+  alpha: 0.5         # cân bằng |R| và E trong điểm nổi bật
+  masked_only: true  # E, R_avg lấy trên các lượt mà bước sóng bị che; false = trên phổ tái tạo đầy đủ
+peaks:
+  min_sep_nm: 10.0
+  min_height: 0.10
+  min_prominence: 0.08
+  top_k: 10
+  tol_nm: 15.0       # dung sai đối chiếu đỉnh (+/- 10-20 nm theo độ phân giải)
+eval:
+  folds: 5
+  runs: 3
+  val_frac: 0.10     # 10% phổ nền giữ lại + 10% phổ bất thường dùng chọn ngưỡng Youden J
+regression:
+  n_select: 100      # 80-120 bước sóng (4-6% của 2.136 kênh)
+  positive_only: true
+  exclude: [Metalaxyl]
+preprocess:
+  n_points: null     # null = giữ số điểm gốc; 32 cho MSMI-NIR
+  sg_window: 15
+  sg_poly: 2

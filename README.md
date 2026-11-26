@@ -2,6 +2,14 @@
 
 A self-supervised masked autoencoder for **anomaly detection** and **anomalous absorption-wavelength localization** in 1-D near-infrared (NIR) spectra.
 
+This repository implements the architecture published in:
+
+> V.H. Nguyen, M.N. Phan, T.H.P. Nguyen, *SpecMultiMAE-AD: A self-supervised masked autoencoder for anomaly detection and localization in NIR spectra*, Applied Soft Computing 204 (2027) 116756. https://doi.org/10.1016/j.asoc.2026.116756
+
+It has two parts:
+- `specmae/`: the full implementation (this README);
+- `teaching_package/`: a compact version for teaching, which adds the downstream **content regression** stage (XGBoost on the full spectrum vs. on the wavelengths selected by SpecMultiMAE-AD) and three learning scenarios. See [`teaching_package/README.md`](teaching_package/README.md).
+
 The model is trained **only on normal spectra**; it needs no anomaly labels, no annotations and no chemical reference libraries. It learns to reconstruct hidden bands of normal spectra, so a foreign substance shows up in two ways:
 - the spectrum's reconstruction error rises (detection);
 - residual peaks appear at the wavelengths where that substance absorbs (localization).
@@ -37,6 +45,7 @@ inference (MMIE): reconstruct each test spectrum under M random masks
 | **Localization** | Prominence `P(λ) = α·|R(λ)| + (1−α)·E(λ)`, max-normalized. Peaks are detected with height, prominence and minimum-separation (nm) constraints, ranked by score, then de-duplicated by interval non-maximum suppression. | `specmae/downstream.py` |
 | **Preprocessing** | Per spectrum: optional uniform resampling → Savitzky–Golay smoothing (window 15, order 2) → SNV → min–max to [0, 1]. Nothing is fitted, so nothing leaks between train and test. | `specmae/preprocessing.py` |
 | **Evaluation** | One-class K-fold protocol, detection and localization metrics. | `specmae/data.py`, `specmae/metrics.py` |
+| **Downstream regression** | XGBoost trained on the full spectrum and on the top-ranked wavelengths (80–120, default 100) selected from the prominence score within each training fold; R² and RMSE per analyte. | `teaching_package/regression/xgb.py`, `teaching_package/scripts/run_cv.py` |
 | **Training** | AdamW, linear warm-up + cosine schedule, mixed precision on CUDA, early stopping on validation reconstruction MSE. | `specmae/train.py` |
 
 `specmae/pipeline.py` wraps all of this in one class, `SpecMultiMAEAD`; `specmae/config.py` holds every setting as dataclasses loaded from JSON.
@@ -156,12 +165,12 @@ Settings are JSON files in `configs/`, mirroring the dataclasses in `specmae/con
 | `mask.ratio`, `k_min..k_max`, `l_min..l_max` | 0.75, 4–8, 8–64 patches | Bounds shrink automatically when they do not fit the spectrum. |
 | `loss.name` | `casrl` | `casrl` or `mse` (plain masked MSE). |
 | `loss.grad_weight` (λ), `loss.beta` | 0.5, 1.0 | |
-| `loss.normalize_weights` | false | See "Design notes". |
+| `loss.normalize_weights` | false | See "Implementation notes". |
 | `train.*` | AdamW 1e-4, wd 0.05, batch 256, ≤ 800 epochs, 10 warm-up epochs, patience 50 | Use a smaller batch for datasets with few normal spectra. |
 | `inference.ensemble_size` (M) | 64 | M = 1 is single-pass inference. |
 | `inference.aggregation` | `full` | `full` or `masked`. |
 | `inference.error_map` | `mse` | `mse` or `variance` (ensemble variance). |
-| `inference.normal_reference` | `none` | `zscore`: per-wavelength normal calibration, see below. |
+| `inference.normal_reference` | `none` | `zscore`: optional per-wavelength standardization of E and \|R\| with statistics of normal training spectra. |
 | `inference.score_reduce` | `mean` | `mean` or `max`. |
 | `threshold.method` | `youden` | `youden` or `sigma` (μ + k·σ). |
 | `localization.*` | α = 0.5; separation 10 nm; height 0.10; prominence 0.08; tolerance 15 nm | For coarse or interpolated spectra, use a larger separation and higher thresholds. |
@@ -178,7 +187,7 @@ Each variant removes or replaces one component:
 | `linear_wavelength` | linear wavelength embedding |
 | `no_casrl` | plain masked MSE |
 
-## Design notes
+## Implementation notes
 
 1. **Masking sampler.** CMSM masks exactly ⌊r·N⌋ patches (clamped to [1, N−1]) in exactly K segments, separated by at least one visible patch:
    - K ~ U{k_min..k_max}, reduced when it does not fit;
@@ -190,22 +199,9 @@ Each variant removes or replaces one component:
 4. **Ensemble aggregation.** `full` averages the complete reconstructions of all M passes. `masked` averages each wavelength only over the passes in which it was hidden; the decoder is never trained on visible positions, so this can be cleaner. It falls back to all passes for wavelengths never hidden.
 5. **Linear wavelength embedding.** LayerNorm(w·λ) is identical for every λ > 0, so the coordinate is centred to [−1, 1] and the bias is initialized non-zero. Otherwise all patches would start with the same embedding.
 
-### Per-wavelength normal calibration (recommended to evaluate)
+### Optional per-wavelength calibration
 
-Reconstruction error is structurally larger at some wavelengths, most of all at the spectrum edges, which have context on only one side. The raw maps E and |R| therefore carry a position-dependent background; peak detection tends to pick the edges, and the mean score is diluted.
-
-`inference.normal_reference=zscore` standardizes E and |R| per wavelength with mean and std statistics from normal training spectra (`reference_size` of them, stored in the checkpoint). Values are clipped at 0. Results on the synthetic benchmark (5 folds):
-
-| | Raw maps | `zscore` | `zscore` + `score_reduce=max` |
-|---|---|---|---|
-| AUROC | 0.55 | 0.69 | **0.89** |
-| AUPRC | 0.74 | 0.83 | **0.96** |
-| F1 | 0.69 | 0.71 | **0.83** |
-| Top-3 hit rate | 0.06 | **0.89** | **0.89** |
-| Mean peak error | 336 nm | **35 nm** | **35 nm** |
-| Peak F1 | 0.08 | **0.45** | **0.45** |
-
-The synthetic data is simple; validate these settings on real spectra before relying on them. Localization IoU stays low (~0.07) in all three settings. That reflects the strict half-height-interval definition more than peak position: the top-3 hit rate is high.
+`inference.normal_reference=zscore` standardizes E and |R| per wavelength with mean and std statistics from normal training spectra (`reference_size` of them, stored in the checkpoint); `inference.score_reduce=max` scores a spectrum by its largest error instead of the mean. Both are off by default.
 
 ```bash
 python run_experiment.py --config configs/vf_pst.json --data spectra.csv \
@@ -227,4 +223,4 @@ python run_experiment.py --config configs/vf_pst.json --data spectra.csv \
 
 ## Hardware
 
-The default model (12 + 4 layers, width 512 / 256, batch 256, 2,136 channels) needs a GPU with substantially more than 2 GB of memory. For small GPUs, lower `train.batch_size`, `model.embed_dim` / `encoder_dim` or `encoder_depth`, or raise `model.patch_size`. `inference.chunk_size` caps the forward passes per inference batch.
+The default model (12 + 4 layers, width 512 / 256, batch 256, 2,136 channels) is meant to run on a GPU; the paper reports a peak GPU memory of 2.35 GB at batch size 256. For small GPUs, lower `train.batch_size`, `model.embed_dim` / `encoder_dim` or `encoder_depth`, or raise `model.patch_size`. `inference.chunk_size` caps the forward passes per inference batch.

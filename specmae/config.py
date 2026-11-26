@@ -72,10 +72,8 @@ class InferenceConfig:
     aggregation: str = "full"    # "full": average full reconstructions; "masked": per wavelength, average only members in which it was masked
     error_map: str = "mse"       # "mse" (default) | "variance"
     chunk_size: int = 4096       # max forward passes per GPU batch (spectra x M)
-    # Optional calibration (off by default). MAE error is structurally larger at some
-    # wavelengths (e.g. spectrum edges, which have one-sided context); "zscore" standardises
-    # E and |R| per wavelength with statistics of normal training spectra before scoring
-    # and localisation, which removes that position-dependent background.
+    # Optional calibration (off by default): "zscore" standardises E and |R| per wavelength
+    # with statistics of normal training spectra before scoring and localisation.
     normal_reference: str = "none"  # "none" (raw maps) | "zscore"
     reference_size: int = 1000       # normal training spectra used for the reference statistics
     score_reduce: str = "mean"       # "mean" (A = mean_l E) | "max"

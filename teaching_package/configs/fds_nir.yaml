@@ -1,0 +1,6 @@
+# FDS-NIR: 2.003 phổ đo bằng 5 thiết bị có dải bước sóng khác nhau. Mô hình được huấn luyện và
+# đánh giá riêng cho từng thiết bị: tạo một tệp .npz cho mỗi thiết bị, chạy run_cv.py cho từng
+# tệp với cấu hình này, rồi lấy trung bình kết quả năm thiết bị.
+base: default.yaml
+train: {batch_size: 32}
+peaks: {min_sep_nm: 10.0, min_height: 0.10, min_prominence: 0.08, tol_nm: 15.0}

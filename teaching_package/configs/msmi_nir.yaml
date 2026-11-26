@@ -1,0 +1,8 @@
+# MSMI-NIR: 23.279 phổ, cảm biến 8 băng 400-1100 nm, nội suy tuyến tính lên lưới 32 điểm.
+# Lưới 32 điểm được chia mảnh với P = 4 (8 mảnh, mỗi mảnh ~88 nm, ứng với một băng gốc của
+# cảm biến), đoạn che dài 1-3 mảnh.
+base: default.yaml
+preprocess: {n_points: 32, sg_window: 5}
+model: {P: 4}
+masking: {l_min: 1, l_max: 3, K_range: [2, 4]}
+peaks: {min_sep_nm: 100.0, min_height: 0.12, min_prominence: 0.10, tol_nm: 20.0}
