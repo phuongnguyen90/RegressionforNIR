@@ -1,0 +1,4 @@
+# VF-PST-NIR: 73.933 phổ, 2.136 kênh, 11 hoạt chất. Kế thừa default.yaml.
+base: default.yaml
+peaks: {min_sep_nm: 10.0, min_height: 0.10, min_prominence: 0.08, tol_nm: 15.0}
+train: {batch_size: 256}

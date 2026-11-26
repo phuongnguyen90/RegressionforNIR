@@ -10,7 +10,7 @@ venv/
 .ipynb_checkpoints/
 
 # Datasets and experiment outputs (not versioned)
-data/
+/data/
 runs/
 *.pt
 *.pth
@@ -21,3 +21,6 @@ runs/
 Thumbs.db
 .vscode/
 .idea/
+
+# Generated teaching figures and checkpoints (re-created by the teaching scripts)
+teaching_package/teaching/output/

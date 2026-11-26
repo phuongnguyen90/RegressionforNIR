@@ -1,0 +1,8 @@
+# Cấu hình thu nhỏ để chạy thử trên CPU vài phút (không dùng để báo cáo kết quả).
+base: default.yaml
+model: {P: 16, d: 64, d_enc: 64, enc_depth: 2, enc_heads: 4, d_dec: 32, dec_depth: 1, dec_heads: 4, n_freq: 32}
+masking: {l_min: 2, l_max: 8}
+train: {epochs: 80, patience: 30, batch_size: 128, warmup_epochs: 2, lr: 1.0e-3, log_every: 20}
+inference: {M: 16}
+eval: {folds: 2, runs: 1}
+regression: {n_select: 40}
